@@ -1,51 +1,68 @@
 "use client"
 
-import { useEffect, useMemo, useState } from "react"
+import { hasSupabaseConfig, supabase } from "@/lib/supabase"
 import { Lock, ShieldCheck, User } from "lucide-react"
-
-const ADMIN_EMAIL = "matheuslevy083@gmail.com"
-const ADMIN_PASSWORD = "@Mtl1608"
+import { useEffect, useMemo, useState } from "react"
 
 export function AdminPanel() {
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [message, setMessage] = useState("")
   const [error, setError] = useState("")
+  const [loading, setLoading] = useState(false)
 
-  const canLogin = useMemo(() => email.trim().length > 0 && password.trim().length > 0, [email, password])
+  const canLogin = useMemo(() => email.trim().length > 0 && password.trim().length > 0 && !loading, [email, password, loading])
 
   useEffect(() => {
-    if (typeof window === "undefined") return
-    const alreadyLogged = window.localStorage.getItem("lw-admin-auth") === "true"
-    if (alreadyLogged) setMessage("Você já está logado. Entre novamente ou abra o painel pelo botão abaixo.")
+    async function checkSession() {
+      if (!supabase) return
+      const { data } = await supabase.auth.getSession()
+      if (data.session) setMessage("Você já está logado. Entre novamente ou abra o painel pelo botão abaixo.")
+    }
+
+    checkSession()
   }, [])
 
-  function handleLogin() {
+  async function handleLogin() {
     if (!canLogin) return
 
-    const cleanEmail = email.trim().toLowerCase()
-
-    if (cleanEmail !== ADMIN_EMAIL || password !== ADMIN_PASSWORD) {
-      window.localStorage.removeItem("lw-admin-auth")
-      window.localStorage.removeItem("lw-admin-user")
-      setMessage("")
-      setError("Email ou senha incorretos.")
+    if (!hasSupabaseConfig || !supabase) {
+      setError("Supabase ainda não foi configurado nas variáveis de ambiente.")
       return
     }
 
-    window.localStorage.setItem("lw-admin-auth", "true")
-    window.localStorage.setItem("lw-admin-user", cleanEmail)
+    setLoading(true)
     setError("")
+    setMessage("")
+
+    const { error } = await supabase.auth.signInWithPassword({
+      email: email.trim().toLowerCase(),
+      password,
+    })
+
+    setLoading(false)
+
+    if (error) {
+      setError("Email ou senha incorretos, ou usuário ainda não criado no Supabase.")
+      return
+    }
+
     setMessage("Login feito. O painel abriu em outra aba.")
     window.open("/admin/dashboard", "_blank", "noopener,noreferrer")
   }
 
-  function openDashboard() {
-    const alreadyLogged = window.localStorage.getItem("lw-admin-auth") === "true"
-    if (!alreadyLogged) {
+  async function openDashboard() {
+    if (!supabase) {
+      setError("Supabase ainda não foi configurado nas variáveis de ambiente.")
+      return
+    }
+
+    const { data } = await supabase.auth.getSession()
+    if (!data.session) {
       setError("Faça login primeiro para abrir o painel.")
       return
     }
+
     window.open("/admin/dashboard", "_blank", "noopener,noreferrer")
   }
 
@@ -60,11 +77,17 @@ export function AdminPanel() {
             <p className="mb-3 text-xs font-black tracking-[0.35em] text-primary">LW STREETWEAR</p>
             <h1 className="text-3xl font-black text-foreground sm:text-4xl">Login do admin</h1>
             <p className="mt-3 text-sm text-muted-foreground">
-              Entre com o email e a senha cadastrados para abrir o painel em outra aba e gerenciar produtos, fotos, nomes e preços.
+              Entre com o usuário criado no Supabase para abrir o painel e gerenciar produtos, fotos, nomes e preços online.
             </p>
           </div>
 
           <div className="space-y-4">
+            {!hasSupabaseConfig && (
+              <div className="rounded-xl border border-yellow-500/30 bg-yellow-500/10 p-3 text-center text-sm font-semibold text-yellow-200">
+                Configure NEXT_PUBLIC_SUPABASE_URL e NEXT_PUBLIC_SUPABASE_ANON_KEY na Vercel para ativar o login.
+              </div>
+            )}
+
             <label className="block">
               <span className="mb-2 flex items-center gap-2 text-sm font-bold text-primary">
                 <User className="h-4 w-4" /> Email
@@ -100,7 +123,7 @@ export function AdminPanel() {
               disabled={!canLogin}
               className="w-full rounded-xl bg-primary px-4 py-3 font-black text-black transition hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50"
             >
-              Entrar e abrir painel
+              {loading ? "Entrando..." : "Entrar e abrir painel"}
             </button>
 
             <button
@@ -124,7 +147,7 @@ export function AdminPanel() {
             )}
 
             <p className="text-center text-xs text-muted-foreground">
-              Login funcional para uso demonstrativo no navegador. Para proteger de verdade em produção, depois conectamos autenticação com backend.
+              Agora o login usa Supabase Auth. O admin só consegue salvar online se estiver autenticado.
             </p>
           </div>
         </section>

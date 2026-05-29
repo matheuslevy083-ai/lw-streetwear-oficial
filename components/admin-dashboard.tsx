@@ -1,10 +1,18 @@
 "use client"
 
 import { products as defaultProducts, type Product } from "@/lib/products"
+import { hasSupabaseConfig, supabase } from "@/lib/supabase"
+import {
+  createProductInSupabase,
+  deleteProductFromSupabase,
+  getProductsFromSupabase,
+  updateProductInSupabase,
+  uploadProductImage,
+} from "@/lib/supabase-products"
 import { Camera, LogOut, PackagePlus, Plus, Save, Star, Trash2, Upload, X } from "lucide-react"
 import { useEffect, useMemo, useState } from "react"
 
-const STORAGE_KEY = "lw-admin-products"
+const ADMIN_EMAIL = "matheuslevy083@gmail.com"
 
 type EditableProduct = Product & {
   sizesText?: string
@@ -47,63 +55,22 @@ function normalizeProduct(product: EditableProduct): Product {
     images: safeImages,
     sizes,
     inStock: true,
+    reservationPrice: product.reservationPrice,
     deliveryEstimate: product.deliveryEstimate || "Entrega em 10 a 15 dias úteis após o fechamento do lote",
     dropName: product.dropName || "DROP 001 — GOLD BLACK",
     gender: product.gender || "Unissex",
   }
 }
 
-function compressImage(file: File): Promise<string> {
-  return new Promise((resolve) => {
-    const reader = new FileReader()
-
-    reader.onload = () => {
-      const img = new Image()
-
-      img.onload = () => {
-        const maxSize = 900
-        const scale = Math.min(1, maxSize / Math.max(img.width, img.height))
-        const width = Math.max(1, Math.round(img.width * scale))
-        const height = Math.max(1, Math.round(img.height * scale))
-
-        const canvas = document.createElement("canvas")
-        canvas.width = width
-        canvas.height = height
-
-        const ctx = canvas.getContext("2d")
-        if (!ctx) {
-          resolve(String(reader.result || ""))
-          return
-        }
-
-        ctx.fillStyle = "#ffffff"
-        ctx.fillRect(0, 0, width, height)
-        ctx.drawImage(img, 0, 0, width, height)
-
-        const compressed = canvas.toDataURL("image/webp", 0.72)
-        resolve(compressed)
-      }
-
-      img.onerror = () => resolve(String(reader.result || ""))
-      img.src = String(reader.result || "")
-    }
-
-    reader.onerror = () => resolve("")
-    reader.readAsDataURL(file)
-  })
-}
-
-function readFiles(files: FileList | null, callback: (images: string[]) => void) {
-  if (!files || files.length === 0) return
-
+async function uploadFiles(files: FileList | null): Promise<string[]> {
+  if (!files || files.length === 0) return []
   const imageFiles = Array.from(files).filter((file) => file.type.startsWith("image/"))
-  if (imageFiles.length === 0) return
-
-  Promise.all(imageFiles.map((file) => compressImage(file))).then((images) => callback(images.filter(Boolean)))
+  if (imageFiles.length === 0) return []
+  return Promise.all(imageFiles.map((file) => uploadProductImage(file)))
 }
 
 export function AdminDashboard() {
-  const [items, setItems] = useState<EditableProduct[]>(() => defaultProducts.map(toEditable))
+  const [items, setItems] = useState<EditableProduct[]>([])
   const [selectedImages, setSelectedImages] = useState<string[]>([])
   const [newName, setNewName] = useState("")
   const [newPrice, setNewPrice] = useState("")
@@ -112,43 +79,78 @@ export function AdminDashboard() {
   const [newDescription, setNewDescription] = useState("")
   const [savedMessage, setSavedMessage] = useState("")
   const [logged, setLogged] = useState(false)
-
-  useEffect(() => {
-    const auth = window.localStorage.getItem("lw-admin-auth") === "true"
-    setLogged(auth)
-
-    const stored = window.localStorage.getItem(STORAGE_KEY)
-    if (stored) {
-      try {
-        const parsed = JSON.parse(stored) as Product[]
-        if (Array.isArray(parsed)) {
-          setItems(parsed.map(toEditable))
-        }
-      } catch {
-        setItems(defaultProducts.map(toEditable))
-      }
-    }
-  }, [])
+  const [loading, setLoading] = useState(true)
+  const [saving, setSaving] = useState(false)
 
   const normalized = useMemo(() => items.map(normalizeProduct), [items])
 
-  function saveProducts(nextItems = items) {
-    const cleanProducts = nextItems.map(normalizeProduct)
-    const payload = JSON.stringify(cleanProducts)
-
-    try {
-      window.localStorage.setItem(STORAGE_KEY, payload)
-      window.dispatchEvent(new StorageEvent("storage", { key: STORAGE_KEY, newValue: payload }))
-      setSavedMessage("Alterações salvas. Atualize a loja se não aparecer automaticamente.")
-    } catch {
-      setSavedMessage("As fotos ainda estão muito pesadas para salvar no navegador. Use menos fotos ou imagens menores.")
-    }
-
-    window.setTimeout(() => setSavedMessage(""), 4500)
+  function showMessage(message: string) {
+    setSavedMessage(message)
+    window.setTimeout(() => setSavedMessage(""), 5000)
   }
 
-  function addNewImages(files: FileList | null) {
-    readFiles(files, (images) => setSelectedImages((current) => uniqueImages([...current, ...images])))
+  async function loadProducts() {
+    setLoading(true)
+    const onlineProducts = await getProductsFromSupabase()
+    setItems((onlineProducts.length > 0 ? onlineProducts : defaultProducts).map(toEditable))
+    setLoading(false)
+  }
+
+  useEffect(() => {
+    async function init() {
+      if (!hasSupabaseConfig || !supabase) {
+        setLogged(false)
+        setItems(defaultProducts.map(toEditable))
+        setLoading(false)
+        return
+      }
+
+      const { data } = await supabase.auth.getSession()
+      const userEmail = data.session?.user.email?.toLowerCase()
+
+      if (!data.session || userEmail !== ADMIN_EMAIL) {
+        setLogged(false)
+        setLoading(false)
+        return
+      }
+
+      setLogged(true)
+      await loadProducts()
+    }
+
+    init()
+  }, [])
+
+  async function saveProducts(nextItems = items) {
+    if (!hasSupabaseConfig || !supabase) {
+      showMessage("Configure o Supabase para salvar online.")
+      return
+    }
+
+    setSaving(true)
+    try {
+      const cleanProducts = nextItems.map(normalizeProduct)
+      const saved = await Promise.all(cleanProducts.map((product, index) => updateProductInSupabase(product, index)))
+      setItems(saved.map(toEditable))
+      showMessage("Alterações salvas online. Agora aparecem em qualquer navegador.")
+    } catch (error) {
+      showMessage(error instanceof Error ? error.message : "Não foi possível salvar online.")
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  async function addNewImages(files: FileList | null) {
+    setSaving(true)
+    try {
+      const urls = await uploadFiles(files)
+      setSelectedImages((current) => uniqueImages([...current, ...urls]))
+      if (urls.length > 0) showMessage("Fotos enviadas para o Supabase.")
+    } catch (error) {
+      showMessage(error instanceof Error ? error.message : "Erro ao enviar fotos.")
+    } finally {
+      setSaving(false)
+    }
   }
 
   function removeNewImage(image: string) {
@@ -159,16 +161,25 @@ export function AdminDashboard() {
     setItems((current) => current.map((item) => (item.id === id ? { ...item, [field]: value } : item)))
   }
 
-  function addImagesToItem(id: string, files: FileList | null) {
-    readFiles(files, (images) => {
-      setItems((current) =>
-        current.map((item) => {
-          if (item.id !== id) return item
-          const nextImages = uniqueImages([...(item.images || []), ...images])
-          return { ...item, image: nextImages[0] || item.image || "/placeholder.svg", images: nextImages }
-        }),
-      )
-    })
+  async function addImagesToItem(id: string, files: FileList | null) {
+    setSaving(true)
+    try {
+      const urls = await uploadFiles(files)
+      const nextItems = items.map((item) => {
+        if (item.id !== id) return item
+        const nextImages = uniqueImages([...(item.images || []), ...urls])
+        return { ...item, image: nextImages[0] || item.image || "/placeholder.svg", images: nextImages }
+      })
+      setItems(nextItems)
+
+      const itemToSave = nextItems.find((item) => item.id === id)
+      if (itemToSave) await updateProductInSupabase(normalizeProduct(itemToSave), nextItems.findIndex((item) => item.id === id))
+      showMessage("Fotos adicionadas e salvas online.")
+    } catch (error) {
+      showMessage(error instanceof Error ? error.message : "Erro ao enviar fotos.")
+    } finally {
+      setSaving(false)
+    }
   }
 
   function removeItemImage(id: string, imageToRemove: string) {
@@ -192,51 +203,90 @@ export function AdminDashboard() {
     )
   }
 
-  function addProduct() {
+  async function addProduct() {
     if (!newName.trim() || !newPrice.trim()) {
-      setSavedMessage("Coloque pelo menos nome e preço para adicionar.")
-      window.setTimeout(() => setSavedMessage(""), 3000)
+      showMessage("Coloque pelo menos nome e preço para adicionar.")
       return
     }
 
-    const images = selectedImages.length > 0 ? selectedImages : ["/placeholder.svg"]
+    setSaving(true)
+    try {
+      const images = selectedImages.length > 0 ? selectedImages : ["/placeholder.svg"]
 
-    const product: EditableProduct = {
-      id: String(Date.now()),
-      name: newName.trim(),
-      description: newDescription.trim() || "Nova peça da coleção LW Streetwear.",
-      price: Number(newPrice.replace(",", ".")) || 0,
-      image: images[0],
-      images,
-      sizesText: newSizes,
-      sizes: newSizes.split(",").map((size) => size.trim()).filter(Boolean),
-      gender: newGender,
-      inStock: true,
-      deliveryEstimate: "Entrega em 10 a 15 dias úteis após o fechamento do lote",
-      dropName: "DROP 001 — GOLD BLACK",
+      const product: Product = {
+        id: crypto.randomUUID(),
+        name: newName.trim(),
+        description: newDescription.trim() || "Nova peça da coleção LW Streetwear.",
+        price: Number(newPrice.replace(",", ".")) || 0,
+        image: images[0],
+        images,
+        sizes: newSizes
+          .split(",")
+          .map((size) => size.trim())
+          .filter(Boolean),
+        gender: newGender,
+        inStock: true,
+        deliveryEstimate: "Entrega em 10 a 15 dias úteis após o fechamento do lote",
+        dropName: "DROP 001 — GOLD BLACK",
+      }
+
+      const savedProduct = await createProductInSupabase(product, 0)
+      const next = [toEditable(savedProduct), ...items]
+      setItems(next)
+      setNewName("")
+      setNewPrice("")
+      setNewDescription("")
+      setNewSizes("P, M, G, GG")
+      setNewGender("Masculino")
+      setSelectedImages([])
+      showMessage("Produto adicionado online.")
+    } catch (error) {
+      showMessage(error instanceof Error ? error.message : "Erro ao adicionar produto.")
+    } finally {
+      setSaving(false)
     }
-
-    const next = [product, ...items]
-    setItems(next)
-    saveProducts(next)
-    setNewName("")
-    setNewPrice("")
-    setNewDescription("")
-    setNewSizes("P, M, G, GG")
-    setNewGender("Masculino")
-    setSelectedImages([])
   }
 
-  function deleteProduct(id: string) {
-    const next = items.filter((item) => item.id !== id)
-    setItems(next)
-    saveProducts(next)
+  async function saveSingleProduct(id: string) {
+    setSaving(true)
+    try {
+      const index = items.findIndex((item) => item.id === id)
+      const item = items[index]
+      if (!item) return
+      const saved = await updateProductInSupabase(normalizeProduct(item), index)
+      setItems((current) => current.map((product) => (product.id === id ? toEditable(saved) : product)))
+      showMessage("Produto salvo online.")
+    } catch (error) {
+      showMessage(error instanceof Error ? error.message : "Erro ao salvar produto.")
+    } finally {
+      setSaving(false)
+    }
   }
 
-  function logout() {
-    window.localStorage.removeItem("lw-admin-auth")
-    setLogged(false)
+  async function deleteProduct(id: string) {
+    setSaving(true)
+    try {
+      await deleteProductFromSupabase(id)
+      setItems((current) => current.filter((item) => item.id !== id))
+      showMessage("Produto apagado online.")
+    } catch (error) {
+      showMessage(error instanceof Error ? error.message : "Erro ao apagar produto.")
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  async function logout() {
+    if (supabase) await supabase.auth.signOut()
     window.location.href = "/admin"
+  }
+
+  if (loading) {
+    return (
+      <main className="flex min-h-screen items-center justify-center bg-black px-4">
+        <div className="rounded-2xl border border-primary/25 bg-card p-6 text-center font-black text-primary">Carregando painel...</div>
+      </main>
+    )
   }
 
   if (!logged) {
@@ -261,7 +311,7 @@ export function AdminDashboard() {
             <p className="mb-3 text-sm font-black tracking-[0.3em] text-primary">PAINEL ADMIN LW</p>
             <h1 className="text-4xl font-black text-primary sm:text-5xl">Gerenciar produtos</h1>
             <p className="mt-3 max-w-2xl text-muted-foreground">
-              Adicione produtos, coloque várias fotos, altere nome, preço, tamanhos e público masculino/feminino. As mudanças ficam salvas no navegador.
+              Agora as mudanças ficam salvas no Supabase e aparecem para todos os navegadores.
             </p>
           </div>
 
@@ -276,10 +326,18 @@ export function AdminDashboard() {
             </a>
             <button
               type="button"
-              onClick={() => saveProducts()}
-              className="inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-3 font-black text-black transition hover:bg-primary/90"
+              onClick={() => loadProducts()}
+              className="rounded-xl border border-primary/30 px-4 py-3 font-bold text-primary transition hover:bg-primary/10"
             >
-              <Save className="h-5 w-5" /> Salvar tudo
+              Atualizar
+            </button>
+            <button
+              type="button"
+              onClick={() => saveProducts()}
+              disabled={saving}
+              className="inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-3 font-black text-black transition hover:bg-primary/90 disabled:opacity-60"
+            >
+              <Save className="h-5 w-5" /> {saving ? "Salvando..." : "Salvar tudo"}
             </button>
             <button
               type="button"
@@ -397,9 +455,10 @@ export function AdminDashboard() {
                 <button
                   type="button"
                   onClick={addProduct}
-                  className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-4 py-3 font-black text-black transition hover:bg-primary/90"
+                  disabled={saving}
+                  className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-4 py-3 font-black text-black transition hover:bg-primary/90 disabled:opacity-60"
                 >
-                  <Plus className="h-5 w-5" /> Adicionar produto
+                  <Plus className="h-5 w-5" /> {saving ? "Salvando..." : "Adicionar produto"}
                 </button>
               </div>
             </div>
@@ -443,17 +502,17 @@ export function AdminDashboard() {
                           <img src={image} alt={`${item.name} foto ${photoIndex + 1}`} className="h-full w-full object-cover" />
                           <button
                             type="button"
-                            title="Usar como principal"
                             onClick={() => setMainImage(item.id, image)}
-                            className={`absolute left-1 top-1 rounded p-1 ${photoIndex === 0 ? "bg-primary text-black" : "bg-black/80 text-primary hover:bg-primary hover:text-black"}`}
+                            className="absolute left-1 top-1 rounded bg-black/80 p-1 text-primary hover:bg-primary hover:text-black"
+                            title="Definir como principal"
                           >
                             <Star className="h-3 w-3" />
                           </button>
                           <button
                             type="button"
-                            title="Apagar foto"
                             onClick={() => removeItemImage(item.id, image)}
                             className="absolute right-1 top-1 rounded bg-black/80 p-1 text-red-300 hover:bg-red-500 hover:text-white"
+                            title="Remover foto"
                           >
                             <X className="h-3 w-3" />
                           </button>
@@ -507,21 +566,23 @@ export function AdminDashboard() {
                         <option value="Unissex">Unissex</option>
                       </select>
                     </label>
-                    <div className="flex items-end text-sm text-muted-foreground">Produto #{index + 1} • {images.length} foto{images.length === 1 ? "" : "s"}</div>
+                    <p className="md:col-span-2 text-xs text-muted-foreground">Ordem: {index + 1} • ID: {item.id}</p>
                   </div>
 
                   <div className="flex flex-row gap-2 lg:flex-col">
                     <button
                       type="button"
-                      onClick={() => saveProducts()}
-                      className="inline-flex flex-1 items-center justify-center gap-2 rounded-lg border border-primary/30 px-3 py-2 font-bold text-primary hover:bg-primary/10 lg:flex-none"
+                      onClick={() => saveSingleProduct(item.id)}
+                      disabled={saving}
+                      className="inline-flex items-center justify-center gap-2 rounded-lg border border-primary/30 px-3 py-2 text-sm font-bold text-primary hover:bg-primary/10 disabled:opacity-60"
                     >
                       <Save className="h-4 w-4" /> Salvar
                     </button>
                     <button
                       type="button"
                       onClick={() => deleteProduct(item.id)}
-                      className="inline-flex flex-1 items-center justify-center gap-2 rounded-lg border border-red-500/40 px-3 py-2 font-bold text-red-300 hover:bg-red-500/10 lg:flex-none"
+                      disabled={saving}
+                      className="inline-flex items-center justify-center gap-2 rounded-lg border border-red-500/40 px-3 py-2 text-sm font-bold text-red-300 hover:bg-red-500/10 disabled:opacity-60"
                     >
                       <Trash2 className="h-4 w-4" /> Apagar
                     </button>

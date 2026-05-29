@@ -1,6 +1,7 @@
 "use client"
 
 import type { Product } from "@/lib/products"
+import { getProductsFromSupabase } from "@/lib/supabase-products"
 import { useEffect, useMemo, useState } from "react"
 import { ProductCard } from "./product-card"
 
@@ -8,24 +9,8 @@ interface ProductGridProps {
   products: Product[]
 }
 
-const STORAGE_KEY = "lw-admin-products"
 const styles = ["Todos", "Camisetas", "Moletons", "Calças", "Jaquetas", "Bermudas"]
 const genders = ["Todos", "Masculino", "Feminino", "Unissex"]
-
-function readAdminProducts(fallback: Product[]) {
-  if (typeof window === "undefined") return fallback
-
-  const stored = window.localStorage.getItem(STORAGE_KEY)
-  if (!stored) return fallback
-
-  try {
-    const parsed = JSON.parse(stored) as Product[]
-    if (!Array.isArray(parsed)) return fallback
-    return parsed
-  } catch {
-    return fallback
-  }
-}
 
 function getStyle(product: Product) {
   const text = `${product.name} ${product.description}`.toLowerCase()
@@ -41,21 +26,21 @@ function getStyle(product: Product) {
 
 export function ProductGrid({ products }: ProductGridProps) {
   const [visibleProducts, setVisibleProducts] = useState<Product[]>(products)
+  const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState("")
   const [style, setStyle] = useState("Todos")
   const [gender, setGender] = useState("Todos")
 
+  async function loadProducts() {
+    setLoading(true)
+    const onlineProducts = await getProductsFromSupabase()
+    setVisibleProducts(onlineProducts.length > 0 ? onlineProducts : products)
+    setLoading(false)
+  }
+
   useEffect(() => {
-    setVisibleProducts(readAdminProducts(products))
-
-    function handleStorage(event: StorageEvent) {
-      if (event.key === STORAGE_KEY) {
-        setVisibleProducts(readAdminProducts(products))
-      }
-    }
-
-    window.addEventListener("storage", handleStorage)
-    return () => window.removeEventListener("storage", handleStorage)
+    loadProducts()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [products])
 
   const filteredProducts = useMemo(() => {
@@ -139,17 +124,21 @@ export function ProductGrid({ products }: ProductGridProps) {
             <button
               type="button"
               onClick={clearFilters}
-              className="rounded-xl border border-primary/30 px-5 py-3 text-sm font-black text-primary transition hover:bg-primary hover:text-black"
+              className="rounded-xl border border-primary/25 px-5 py-3 text-sm font-black text-primary transition hover:bg-primary/10"
             >
               Limpar
             </button>
           </div>
 
-          <div className="mt-5 flex justify-end">
-            <p className="text-sm font-bold text-muted-foreground">
-              {filteredProducts.length} peça{filteredProducts.length === 1 ? "" : "s"} encontrada
-              {filteredProducts.length === 1 ? "" : "s"}
+          <div className="mt-4 flex flex-wrap items-center justify-between gap-3 text-sm text-muted-foreground">
+            <p>
+              {loading
+                ? "Carregando peças online..."
+                : `${filteredProducts.length} peça${filteredProducts.length === 1 ? "" : "s"} encontrada${filteredProducts.length === 1 ? "" : "s"}`}
             </p>
+            <button type="button" onClick={loadProducts} className="font-bold text-primary hover:underline">
+              Atualizar coleção
+            </button>
           </div>
         </div>
 
