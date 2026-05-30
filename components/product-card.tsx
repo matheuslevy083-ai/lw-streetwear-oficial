@@ -16,46 +16,53 @@ export function ProductCard({ product }: ProductCardProps) {
 
   return (
     <>
-      <div
+      <article
         onClick={() => setIsModalOpen(true)}
-        className="group cursor-pointer bg-card border border-primary/20 rounded-lg overflow-hidden hover:border-primary transition-all duration-300 hover:shadow-lg hover:shadow-primary/20"
+        className="group cursor-pointer overflow-hidden rounded-2xl border border-primary/15 bg-card shadow-lg shadow-black/20 transition-all duration-300 hover:-translate-y-1 hover:border-primary/70 hover:shadow-primary/20"
       >
-        <div className="aspect-square relative overflow-hidden bg-black/50">
+        <div className="relative aspect-[3/4] overflow-hidden bg-zinc-950 sm:aspect-square">
           <Image
             src={mainImage}
             alt={product.name}
             fill
             unoptimized
-            className="object-cover group-hover:scale-110 transition-transform duration-300"
+            className="object-cover transition-transform duration-500 group-hover:scale-105"
           />
+
+          <div className="absolute left-2 top-2 rounded-full bg-black/75 px-2 py-1 text-[9px] font-black uppercase tracking-wide text-primary backdrop-blur sm:left-3 sm:top-3 sm:text-xs">
+            Drop 001
+          </div>
+
           {images.length > 1 && (
-            <div className="absolute right-3 top-3 rounded-full border border-primary/30 bg-black/80 px-3 py-1 text-xs font-black text-primary">
+            <div className="absolute right-2 top-2 rounded-full border border-primary/30 bg-black/80 px-2 py-1 text-[9px] font-black text-primary backdrop-blur sm:right-3 sm:top-3 sm:text-xs">
               +{images.length - 1} fotos
-            </div>
-          )}
-          {product.dropName && (
-            <div className="absolute bottom-3 left-3 right-3 rounded-md bg-black/75 border border-primary/30 px-3 py-2">
-              <p className="text-xs font-bold text-primary">{product.dropName}</p>
             </div>
           )}
         </div>
 
-        <div className="p-4">
-          <h3 className="font-semibold text-foreground mb-1 group-hover:text-primary transition-colors">
+        <div className="space-y-2 p-3 sm:p-4">
+          <h3 className="line-clamp-2 min-h-[38px] text-sm font-black leading-tight text-foreground transition-colors group-hover:text-primary sm:min-h-0 sm:text-base">
             {product.name}
           </h3>
-          <p className="text-sm text-muted-foreground mb-3 line-clamp-2">{product.description}</p>
-          <div className="space-y-2">
-            <div className="flex items-center justify-between gap-3">
-              <span className="text-2xl font-bold text-primary">R$ {product.price.toFixed(2)}</span>
-              {product.sizes && (
-                <span className="text-xs text-muted-foreground text-right">Tamanhos: {product.sizes.join(", ")}</span>
+
+          <p className="hidden text-sm text-muted-foreground sm:line-clamp-2">{product.description}</p>
+
+          <div className="flex items-end justify-between gap-2">
+            <div>
+              <span className="block text-lg font-black text-primary sm:text-2xl">R$ {product.price.toFixed(2)}</span>
+              {product.reservationPrice && (
+                <span className="text-[10px] font-semibold text-muted-foreground sm:text-xs">
+                  Reserva: R$ {product.reservationPrice.toFixed(2)}
+                </span>
               )}
             </div>
-            <p className="text-xs text-muted-foreground">{product.deliveryEstimate}</p>
           </div>
+
+          {product.sizes && product.sizes.length > 0 && (
+            <p className="truncate text-[10px] text-muted-foreground sm:text-xs">Tam: {product.sizes.join(", ")}</p>
+          )}
         </div>
-      </div>
+      </article>
 
       <ProductModal product={product} isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
     </>
