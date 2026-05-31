@@ -2,7 +2,7 @@
 
 import type { Product } from "@/lib/products"
 import { getProductsFromSupabase } from "@/lib/supabase-products"
-import { Search, SlidersHorizontal, X, RotateCcw, Sparkles } from "lucide-react"
+import { Grid2X2, Heart, List, Package, Search, Shirt, SlidersHorizontal, Star, Tag, Truck, Watch } from "lucide-react"
 import { useEffect, useMemo, useState } from "react"
 import { ProductCard } from "./product-card"
 
@@ -10,55 +10,33 @@ interface ProductGridProps {
   products: Product[]
 }
 
-const styles = ["Todos", "Camisetas", "Moletons", "Calças", "Jaquetas", "Bermudas"]
-const genders = ["Todos", "Masculino", "Feminino", "Unissex"]
+const categories = [
+  { label: "All", value: "Todos", icon: Grid2X2 },
+  { label: "T-Shirts", value: "Camisetas", icon: Shirt },
+  { label: "Hoodies", value: "Moletons", icon: Package },
+  { label: "Pants", value: "Calças", icon: Watch },
+  { label: "Jackets", value: "Jaquetas", icon: Shirt },
+  { label: "Shorts", value: "Bermudas", icon: Package },
+  { label: "Accessories", value: "Acessórios", icon: Truck },
+  { label: "New arrivals", value: "Novidades", icon: Star },
+  { label: "Sale", value: "Sale", icon: Tag },
+]
 
 function getStyle(product: Product) {
   const text = `${product.name} ${product.description}`.toLowerCase()
-
-  if (text.includes("moletom") || text.includes("hoodie")) return "Moletons"
-  if (text.includes("calça") || text.includes("cargo")) return "Calças"
-  if (text.includes("jaqueta") || text.includes("corta-vento")) return "Jaquetas"
+  if (text.includes("moletom") || text.includes("hoodie") || text.includes("blusa")) return "Moletons"
+  if (text.includes("calça") || text.includes("cargo") || text.includes("pants")) return "Calças"
+  if (text.includes("jaqueta") || text.includes("corta-vento") || text.includes("jacket")) return "Jaquetas"
   if (text.includes("bermuda") || text.includes("short")) return "Bermudas"
-  if (text.includes("camiseta") || text.includes("t-shirt") || text.includes("shirt")) return "Camisetas"
-
-  return "Outros"
-}
-
-function FilterSelect({
-  label,
-  value,
-  items,
-  onChange,
-}: {
-  label: string
-  value: string
-  items: string[]
-  onChange: (value: string) => void
-}) {
-  return (
-    <label className="block">
-      <span className="mb-2 block text-[11px] font-black uppercase tracking-[0.2em] text-primary">{label}</span>
-      <select
-        value={value}
-        onChange={(event) => onChange(event.target.value)}
-        className="w-full rounded-2xl border border-primary/20 bg-black px-4 py-3 text-sm font-bold text-foreground outline-none transition focus:border-primary"
-      >
-        {items.map((item) => (
-          <option key={item} value={item}>
-            {item === "Todos" ? (label === "Público" ? "Masculino e feminino" : "Todos os estilos") : item}
-          </option>
-        ))}
-      </select>
-    </label>
-  )
+  if (text.includes("camiseta") || text.includes("t-shirt") || text.includes("shirt") || text.includes("tee")) return "Camisetas"
+  return "Camisetas"
 }
 
 export function ProductGrid({ products }: ProductGridProps) {
   const [visibleProducts, setVisibleProducts] = useState<Product[]>(products)
-  const [loading, setLoading] = useState(true)
+  const [loading, setLoading] = useState(false)
   const [search, setSearch] = useState("")
-  const [style, setStyle] = useState("Todos")
+  const [category, setCategory] = useState("Todos")
   const [gender, setGender] = useState("Todos")
   const [sort, setSort] = useState("recentes")
   const [showMobileFilters, setShowMobileFilters] = useState(false)
@@ -79,18 +57,17 @@ export function ProductGrid({ products }: ProductGridProps) {
     const normalizedSearch = search.trim().toLowerCase()
 
     const list = visibleProducts.filter((product) => {
-      const productStyle = getStyle(product)
+      const style = getStyle(product)
       const productGender = product.gender || "Unissex"
-      const matchStyle = style === "Todos" || productStyle === style
-      const matchGender = gender === "Todos" || productGender === gender
-      const matchSearch =
+      const matchesCategory = category === "Todos" || category === "Novidades" || category === "Sale" || category === "Acessórios" || style === category
+      const matchesGender = gender === "Todos" || productGender === gender || productGender === "Unissex"
+      const matchesSearch =
         !normalizedSearch ||
         product.name.toLowerCase().includes(normalizedSearch) ||
         product.description.toLowerCase().includes(normalizedSearch) ||
-        productStyle.toLowerCase().includes(normalizedSearch) ||
-        productGender.toLowerCase().includes(normalizedSearch)
+        style.toLowerCase().includes(normalizedSearch)
 
-      return matchStyle && matchGender && matchSearch
+      return matchesCategory && matchesGender && matchesSearch
     })
 
     return [...list].sort((a, b) => {
@@ -99,218 +76,131 @@ export function ProductGrid({ products }: ProductGridProps) {
       if (sort === "az") return a.name.localeCompare(b.name)
       return 0
     })
-  }, [visibleProducts, search, style, gender, sort])
+  }, [visibleProducts, search, category, gender, sort])
 
   function clearFilters() {
     setSearch("")
-    setStyle("Todos")
+    setCategory("Todos")
     setGender("Todos")
     setSort("recentes")
-    setShowMobileFilters(false)
   }
 
-  const hasFilter = Boolean(search || style !== "Todos" || gender !== "Todos" || sort !== "recentes")
-
   return (
-    <section id="colecao" className="bg-black px-3 pb-20 pt-5 sm:px-6 sm:pb-14 sm:pt-12 lg:px-8">
-      <div className="mx-auto max-w-7xl">
-        <div className="mb-5 flex flex-col gap-2 text-left sm:mb-8 sm:flex-row sm:items-end sm:justify-between">
-          <div>
-            <p className="mb-2 text-[11px] font-black tracking-[0.35em] text-primary sm:text-sm">COLEÇÃO LW</p>
-            <h2 className="text-2xl font-black text-white sm:text-4xl">Produtos em destaque</h2>
-            <p className="mt-2 max-w-2xl text-sm text-muted-foreground sm:text-base">
-              Experiência mais limpa, organizada e rápida para comprar no celular e no computador.
-            </p>
-          </div>
-          <div className="hidden rounded-full border border-primary/20 px-4 py-2 text-sm font-bold text-primary sm:block">
-            {loading ? "Carregando..." : `${filteredProducts.length} peça${filteredProducts.length === 1 ? "" : "s"} encontrada${filteredProducts.length === 1 ? "" : "s"}`}
-          </div>
-        </div>
-
-        <div id="categorias" className="mb-5 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:mb-8">
-          <div className="flex min-w-max gap-2">
-            {styles.map((item) => (
+    <section id="colecao" className="bg-[#050505] pb-24 lg:pb-10">
+      <div id="categorias" className="sticky top-[140px] z-30 border-b border-white/10 border-t border-white/10 bg-black/92 backdrop-blur-xl lg:top-[108px]">
+        <div className="mx-auto max-w-[1540px] overflow-x-auto px-4 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden lg:px-12">
+          <div className="flex min-w-max items-center gap-2 py-3 lg:gap-5">
+            {categories.map(({ label, value, icon: Icon }) => (
               <button
-                key={item}
+                key={value}
                 type="button"
-                onClick={() => setStyle(item)}
-                className={`rounded-full px-4 py-2 text-xs font-black transition sm:px-5 sm:py-2.5 sm:text-sm ${
-                  style === item ? "bg-primary text-black" : "border border-primary/15 bg-white/[0.03] text-zinc-300 hover:border-primary/50"
+                onClick={() => setCategory(value)}
+                className={`flex h-11 items-center gap-2 rounded-full border px-4 text-[10px] font-black uppercase tracking-[0.08em] transition lg:h-14 lg:rounded-none lg:border-0 lg:border-b-2 lg:px-6 ${
+                  category === value
+                    ? "border-primary bg-primary/10 text-primary lg:bg-transparent"
+                    : "border-white/10 bg-white/[0.03] text-zinc-300 hover:border-primary/40 hover:text-primary lg:bg-transparent"
                 }`}
               >
-                {item}
+                <Icon className="h-4 w-4 lg:h-6 lg:w-6" />
+                {label}
               </button>
             ))}
           </div>
         </div>
+      </div>
 
-        <div className="grid gap-6 lg:grid-cols-[280px_1fr]">
-          <aside className="hidden lg:block">
-            <div className="sticky top-28 rounded-3xl border border-primary/15 bg-card/70 p-5 shadow-2xl shadow-black/30">
-              <div className="mb-5 flex items-center gap-2">
-                <SlidersHorizontal className="h-5 w-5 text-primary" />
-                <h3 className="text-lg font-black text-white">Filtros</h3>
-              </div>
+      <div className="mx-auto max-w-[1540px] px-4 py-4 lg:px-12 lg:py-6">
+        <div className="mb-4 grid gap-3 lg:grid-cols-[120px_140px_120px_120px_120px_150px_1fr_190px_82px] lg:items-center">
+          <button
+            type="button"
+            onClick={() => setShowMobileFilters(true)}
+            className="flex h-11 items-center justify-center gap-2 rounded border border-white/12 bg-white/[0.025] px-4 text-[11px] font-black uppercase tracking-[0.12em] text-zinc-200 transition hover:border-primary/50 hover:text-primary lg:justify-start"
+          >
+            <SlidersHorizontal className="h-4 w-4" /> Filters
+          </button>
 
-              <div className="space-y-5">
-                <label className="relative block">
-                  <span className="mb-2 block text-[11px] font-black uppercase tracking-[0.2em] text-primary">Buscar</span>
-                  <Search className="pointer-events-none absolute left-3 top-[42px] h-4 w-4 text-primary" />
-                  <input
-                    value={search}
-                    onChange={(event) => setSearch(event.target.value)}
-                    placeholder="Nome da peça..."
-                    className="w-full rounded-2xl border border-primary/20 bg-black py-3 pl-10 pr-4 text-sm text-foreground outline-none transition placeholder:text-muted-foreground focus:border-primary"
-                  />
-                </label>
+          <select value={category} onChange={(event) => setCategory(event.target.value)} className="hidden h-11 rounded border border-white/12 bg-black px-4 text-[11px] font-black uppercase tracking-[0.08em] text-zinc-200 outline-none focus:border-primary lg:block">
+            {categories.slice(0, 6).map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}
+          </select>
 
-                <FilterSelect label="Estilo" value={style} items={styles} onChange={setStyle} />
-                <FilterSelect label="Público" value={gender} items={genders} onChange={setGender} />
+          <select className="hidden h-11 rounded border border-white/12 bg-black px-4 text-[11px] font-black uppercase tracking-[0.08em] text-zinc-200 outline-none focus:border-primary lg:block" defaultValue="size">
+            <option value="size">Size</option><option>P</option><option>M</option><option>G</option><option>GG</option>
+          </select>
 
-                <label className="block">
-                  <span className="mb-2 block text-[11px] font-black uppercase tracking-[0.2em] text-primary">Ordenar</span>
-                  <select
-                    value={sort}
-                    onChange={(event) => setSort(event.target.value)}
-                    className="w-full rounded-2xl border border-primary/20 bg-black px-4 py-3 text-sm font-bold text-foreground outline-none transition focus:border-primary"
-                  >
-                    <option value="recentes">Mais recentes</option>
-                    <option value="menor">Menor preço</option>
-                    <option value="maior">Maior preço</option>
-                    <option value="az">A-Z</option>
-                  </select>
-                </label>
+          <select className="hidden h-11 rounded border border-white/12 bg-black px-4 text-[11px] font-black uppercase tracking-[0.08em] text-zinc-200 outline-none focus:border-primary lg:block" defaultValue="color">
+            <option value="color">Color</option><option>Black</option><option>Gold</option><option>White</option>
+          </select>
 
-                <button
-                  type="button"
-                  onClick={clearFilters}
-                  className="flex w-full items-center justify-center gap-2 rounded-2xl border border-primary/25 px-5 py-3 text-sm font-black text-primary transition hover:bg-primary/10"
-                >
-                  <RotateCcw className="h-4 w-4" />
-                  Limpar filtros
-                </button>
-              </div>
-            </div>
-          </aside>
+          <select className="hidden h-11 rounded border border-white/12 bg-black px-4 text-[11px] font-black uppercase tracking-[0.08em] text-zinc-200 outline-none focus:border-primary lg:block" defaultValue="price">
+            <option value="price">Price</option><option>Até R$100</option><option>R$100+</option>
+          </select>
 
-          <div>
-            <div className="sticky top-[82px] z-30 mb-4 rounded-3xl border border-primary/20 bg-black/92 p-3 shadow-2xl shadow-black/50 backdrop-blur-xl lg:static lg:mb-6 lg:bg-card/60">
-              <div className="flex gap-2">
-                <label className="relative block flex-1">
-                  <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-primary" />
-                  <input
-                    value={search}
-                    onChange={(event) => setSearch(event.target.value)}
-                    placeholder="Buscar camiseta, cargo, moletom..."
-                    className="h-11 w-full rounded-full border border-primary/20 bg-zinc-950 pl-10 pr-4 text-sm text-foreground outline-none transition placeholder:text-muted-foreground focus:border-primary lg:hidden"
-                  />
-                  <div className="hidden h-11 items-center gap-2 rounded-full border border-primary/15 bg-black px-4 text-sm text-zinc-400 lg:flex">
-                    <Sparkles className="h-4 w-4 text-primary" />
-                    Peças organizadas por drop, estilo e público.
-                  </div>
-                </label>
+          <select value={gender} onChange={(event) => setGender(event.target.value)} className="hidden h-11 rounded border border-white/12 bg-black px-4 text-[11px] font-black uppercase tracking-[0.08em] text-zinc-200 outline-none focus:border-primary lg:block">
+            <option value="Todos">Availability</option><option value="Masculino">Masculino</option><option value="Feminino">Feminino</option><option value="Unissex">Unissex</option>
+          </select>
 
-                <button
-                  type="button"
-                  onClick={() => setShowMobileFilters(true)}
-                  className="flex h-11 shrink-0 items-center gap-2 rounded-full border border-primary/25 px-4 text-xs font-black text-primary lg:hidden"
-                >
-                  <SlidersHorizontal className="h-4 w-4" />
-                  Filtrar
-                </button>
-              </div>
+          <div className="relative">
+            <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-500" />
+            <input
+              value={search}
+              onChange={(event) => setSearch(event.target.value)}
+              placeholder="Search products..."
+              className="h-11 w-full rounded border border-white/12 bg-white/[0.025] pl-11 pr-4 text-sm text-white outline-none placeholder:text-zinc-600 focus:border-primary"
+            />
+          </div>
 
-              <div className="mt-3 flex items-center justify-between gap-3 text-xs text-muted-foreground sm:text-sm">
-                <p>
-                  {loading
-                    ? "Carregando peças online..."
-                    : `${filteredProducts.length} peça${filteredProducts.length === 1 ? "" : "s"} encontrada${filteredProducts.length === 1 ? "" : "s"}`}
-                </p>
-                <button type="button" onClick={loadProducts} className="font-black text-primary hover:underline">
-                  Atualizar
-                </button>
-              </div>
-            </div>
+          <select value={sort} onChange={(event) => setSort(event.target.value)} className="h-11 rounded border border-white/12 bg-black px-4 text-[11px] font-black uppercase tracking-[0.08em] text-zinc-200 outline-none focus:border-primary">
+            <option value="recentes">Sort by: Newest</option><option value="menor">Lowest price</option><option value="maior">Highest price</option><option value="az">A-Z</option>
+          </select>
 
-            {hasFilter && (
-              <div className="mb-4 flex flex-wrap items-center gap-2 text-xs">
-                {search && <span className="rounded-full bg-primary/10 px-3 py-1 font-bold text-primary">Busca: {search}</span>}
-                {style !== "Todos" && <span className="rounded-full bg-primary/10 px-3 py-1 font-bold text-primary">{style}</span>}
-                {gender !== "Todos" && <span className="rounded-full bg-primary/10 px-3 py-1 font-bold text-primary">{gender}</span>}
-                <button onClick={clearFilters} className="font-black text-zinc-400 underline">limpar</button>
-              </div>
-            )}
-
-            {filteredProducts.length > 0 ? (
-              <div id="novidades" className="grid grid-cols-2 gap-3 sm:gap-5 md:grid-cols-3 xl:grid-cols-4">
-                {filteredProducts.map((product) => (
-                  <ProductCard key={product.id} product={product} />
-                ))}
-              </div>
-            ) : (
-              <div className="rounded-3xl border border-primary/20 bg-card p-8 text-center sm:p-12">
-                <h3 className="text-2xl font-black text-primary">Nenhuma peça encontrada</h3>
-                <p className="mt-3 text-sm text-muted-foreground sm:text-base">
-                  Tente procurar outro nome, escolher outro estilo ou trocar o filtro masculino/feminino.
-                </p>
-                <button
-                  type="button"
-                  onClick={clearFilters}
-                  className="mt-6 rounded-full bg-primary px-6 py-3 font-black text-black transition hover:bg-primary/90"
-                >
-                  Ver coleção completa
-                </button>
-              </div>
-            )}
+          <div className="hidden grid-cols-2 overflow-hidden rounded border border-white/12 lg:grid">
+            <button className="flex h-11 items-center justify-center bg-primary/10 text-primary"><Grid2X2 className="h-5 w-5" /></button>
+            <button className="flex h-11 items-center justify-center text-zinc-500"><List className="h-5 w-5" /></button>
           </div>
         </div>
 
-        {showMobileFilters && (
-          <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm lg:hidden" onClick={() => setShowMobileFilters(false)}>
-            <div
-              className="absolute bottom-0 left-0 right-0 rounded-t-[2rem] border border-primary/20 bg-card p-5 pb-7 shadow-2xl"
-              onClick={(event) => event.stopPropagation()}
-            >
-              <div className="mb-5 flex items-center justify-between">
-                <h3 className="text-xl font-black text-white">Filtrar peças</h3>
-                <button onClick={() => setShowMobileFilters(false)} className="rounded-full border border-primary/20 p-2 text-primary">
-                  <X className="h-5 w-5" />
-                </button>
-              </div>
+        <div className="mb-4 flex items-center justify-between text-xs text-zinc-500">
+          <p>{loading ? "Loading online products..." : `${filteredProducts.length} products found`}</p>
+          <button onClick={loadProducts} className="font-black uppercase tracking-[0.08em] text-primary hover:underline">Update</button>
+        </div>
 
-              <div className="space-y-4">
-                <FilterSelect label="Estilo" value={style} items={styles} onChange={setStyle} />
-                <FilterSelect label="Público" value={gender} items={genders} onChange={setGender} />
-                <label className="block">
-                  <span className="mb-2 block text-[11px] font-black uppercase tracking-[0.2em] text-primary">Ordenar</span>
-                  <select
-                    value={sort}
-                    onChange={(event) => setSort(event.target.value)}
-                    className="w-full rounded-2xl border border-primary/20 bg-black px-4 py-3 text-sm font-bold text-foreground outline-none"
-                  >
-                    <option value="recentes">Mais recentes</option>
-                    <option value="menor">Menor preço</option>
-                    <option value="maior">Maior preço</option>
-                    <option value="az">A-Z</option>
-                  </select>
-                </label>
-              </div>
-
-              <div className="mt-6 grid grid-cols-2 gap-3">
-                <button onClick={clearFilters} className="rounded-2xl border border-primary/25 px-5 py-3 text-sm font-black text-primary">
-                  Limpar
-                </button>
-                <button
-                  onClick={() => setShowMobileFilters(false)}
-                  className="rounded-2xl bg-primary px-5 py-3 text-sm font-black text-black"
-                >
-                  Ver peças
-                </button>
-              </div>
-            </div>
+        {filteredProducts.length > 0 ? (
+          <div id="novidades" className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 xl:grid-cols-4">
+            {filteredProducts.map((product) => (
+              <ProductCard key={product.id} product={product} />
+            ))}
+          </div>
+        ) : (
+          <div className="rounded-2xl border border-primary/20 bg-white/[0.03] p-10 text-center">
+            <h3 className="text-2xl font-black uppercase tracking-tight text-primary">No products found</h3>
+            <p className="mt-3 text-zinc-400">Try changing your filters or search term.</p>
+            <button onClick={clearFilters} className="mt-6 rounded border border-primary px-6 py-3 text-sm font-black uppercase text-primary hover:bg-primary hover:text-black">Clear filters</button>
           </div>
         )}
       </div>
+
+      {showMobileFilters && (
+        <div className="fixed inset-0 z-[80] bg-black/65 backdrop-blur-sm lg:hidden" onClick={() => setShowMobileFilters(false)}>
+          <div className="absolute inset-x-0 bottom-0 rounded-t-3xl border-t border-primary/30 bg-[#080808] p-5" onClick={(event) => event.stopPropagation()}>
+            <div className="mb-5 flex items-center justify-between">
+              <h3 className="text-lg font-black uppercase tracking-tight text-white">Filters</h3>
+              <button onClick={() => setShowMobileFilters(false)} className="text-zinc-400">Close</button>
+            </div>
+            <div className="space-y-3">
+              <select value={category} onChange={(event) => setCategory(event.target.value)} className="h-12 w-full rounded-xl border border-white/12 bg-black px-4 text-sm font-bold text-white">
+                {categories.slice(0, 6).map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}
+              </select>
+              <select value={gender} onChange={(event) => setGender(event.target.value)} className="h-12 w-full rounded-xl border border-white/12 bg-black px-4 text-sm font-bold text-white">
+                <option value="Todos">Todos os públicos</option><option value="Masculino">Masculino</option><option value="Feminino">Feminino</option><option value="Unissex">Unissex</option>
+              </select>
+              <select value={sort} onChange={(event) => setSort(event.target.value)} className="h-12 w-full rounded-xl border border-white/12 bg-black px-4 text-sm font-bold text-white">
+                <option value="recentes">Mais recentes</option><option value="menor">Menor preço</option><option value="maior">Maior preço</option><option value="az">A-Z</option>
+              </select>
+            </div>
+            <button onClick={() => setShowMobileFilters(false)} className="mt-5 h-12 w-full rounded-xl bg-primary text-sm font-black uppercase text-black">Apply filters</button>
+          </div>
+        </div>
+      )}
     </section>
   )
 }
