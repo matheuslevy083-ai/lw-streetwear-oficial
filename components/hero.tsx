@@ -3,48 +3,57 @@ import { ArrowRight } from "lucide-react"
 
 export function Hero() {
   return (
-    <section className="relative overflow-hidden border-b border-white/10 bg-[#050505]">
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_75%_20%,rgba(212,175,55,0.14),transparent_35%),linear-gradient(90deg,#050505_0%,#050505_36%,rgba(5,5,5,0.88)_55%,rgba(5,5,5,0.35)_100%)]" />
-      <div className="absolute inset-0 opacity-[0.16] [background-image:linear-gradient(135deg,rgba(255,255,255,0.04)_25%,transparent_25%),linear-gradient(225deg,rgba(255,255,255,0.035)_25%,transparent_25%)] [background-size:46px_46px]" />
+    <section className="relative overflow-hidden border-b border-[#2a210c] bg-[#030303]">
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_78%_35%,rgba(212,175,55,0.16),transparent_35%),linear-gradient(90deg,#030303_0%,#050505_44%,rgba(5,5,5,0.78)_68%,rgba(5,5,5,0.28)_100%)]" />
+      <div className="absolute inset-0 opacity-[0.08] [background-image:linear-gradient(135deg,rgba(255,255,255,0.05)_25%,transparent_25%),linear-gradient(225deg,rgba(255,255,255,0.035)_25%,transparent_25%)] [background-size:44px_44px]" />
 
-      <div className="relative mx-auto max-w-[1540px] px-4 pb-6 pt-5 lg:px-12 lg:pb-0 lg:pt-0">
-        <div className="grid min-h-[320px] overflow-hidden rounded-none lg:min-h-[380px] lg:grid-cols-[1.05fr_0.95fr]">
-          <div className="z-10 flex flex-col justify-center py-8 lg:py-16">
-            <p className="mb-3 text-[10px] font-black uppercase tracking-[0.18em] text-primary lg:mb-5 lg:text-sm">
-              SUMMER '24 COLLECTION
+      <div className="relative mx-auto max-w-[1440px] px-4 py-6 lg:px-8 lg:py-0 xl:px-12">
+        <div className="grid min-h-[390px] items-center gap-7 lg:grid-cols-[0.95fr_1.05fr] lg:gap-12 xl:min-h-[455px]">
+          <div className="z-10 max-w-[760px] py-4 lg:py-10">
+            <p className="mb-4 inline-flex rounded-full border border-primary/45 bg-primary/10 px-4 py-2 text-[10px] font-black uppercase tracking-[0.24em] text-primary">
+              Drop 001 — Gold Black
             </p>
-            <h1 className="max-w-[700px] text-[38px] font-black uppercase leading-[0.88] tracking-[-0.055em] text-white sm:text-6xl lg:text-[78px] xl:text-[90px]">
-              Built different.<br />Made to stand out.
+            <h1 className="max-w-[720px] text-[42px] font-black uppercase leading-[0.9] tracking-[-0.06em] text-white sm:text-6xl lg:text-[70px] xl:text-[78px]">
+              Streetwear<br /><span className="text-primary">urbano</span> em<br />drop limitado
             </h1>
-            <p className="mt-4 max-w-[520px] text-sm leading-relaxed text-zinc-300 lg:text-lg">
-              Premium materials. Bold designs. Limited quantities.
+            <p className="mt-5 max-w-[540px] text-sm leading-relaxed text-zinc-300 lg:text-base">
+              Peças selecionadas, visual premium preto e dourado, reserva rápida e atendimento final pelo WhatsApp.
             </p>
-            <a href="#colecao" className="mt-6 inline-flex w-fit items-center gap-3 rounded-none border border-primary px-6 py-3 text-[11px] font-black uppercase tracking-[0.16em] text-primary transition hover:bg-primary hover:text-black lg:px-8">
-              Shop the collection <ArrowRight className="h-4 w-4" />
-            </a>
-          </div>
-
-          <div className="relative -mt-4 h-[250px] lg:mt-0 lg:h-auto">
-            <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(212,175,55,0.2),transparent_45%)]" />
-            <div className="absolute inset-y-0 right-0 w-[82%] overflow-hidden lg:w-full">
-              <Image
-                src="/black-t-shirt-with-gold-logo-streetwear.jpg"
-                alt="LW Streetwear"
-                fill
-                priority
-                className="object-cover object-center brightness-[0.62] contrast-125 saturate-75"
-              />
-              <div className="absolute inset-0 bg-gradient-to-r from-[#050505] via-transparent to-transparent" />
-              <div className="absolute inset-0 bg-gradient-to-t from-[#050505] via-transparent to-transparent lg:hidden" />
+            <div className="mt-7 flex flex-wrap gap-3">
+              <a href="#colecao" className="inline-flex h-12 items-center gap-3 rounded-full bg-primary px-6 text-[12px] font-black uppercase tracking-wide text-black transition hover:brightness-110">
+                Ver coleção <ArrowRight className="h-4 w-4" />
+              </a>
+              <a href="#como-reservar" className="inline-flex h-12 items-center rounded-full border border-primary/60 px-6 text-[12px] font-black uppercase tracking-wide text-primary transition hover:bg-primary hover:text-black">
+                Como reservar
+              </a>
+            </div>
+            <div className="mt-7 grid max-w-[620px] grid-cols-3 gap-3">
+              <div className="rounded-2xl border border-primary/25 bg-black/50 p-4">
+                <p className="text-[10px] font-black uppercase tracking-[0.18em] text-primary">Coleção</p>
+                <p className="mt-1 text-lg font-black text-white">Limitada</p>
+              </div>
+              <div className="rounded-2xl border border-primary/25 bg-black/50 p-4">
+                <p className="text-[10px] font-black uppercase tracking-[0.18em] text-primary">Entrega</p>
+                <p className="mt-1 text-lg font-black text-white">10–15 dias</p>
+              </div>
+              <div className="rounded-2xl border border-primary/25 bg-black/50 p-4">
+                <p className="text-[10px] font-black uppercase tracking-[0.18em] text-primary">Reserva</p>
+                <p className="mt-1 text-lg font-black text-white">Via Pix</p>
+              </div>
             </div>
           </div>
-        </div>
 
-        <div className="absolute bottom-3 left-1/2 hidden -translate-x-1/2 gap-2 lg:flex">
-          <span className="h-2 w-8 rounded-full bg-primary" />
-          <span className="h-2 w-2 rounded-full bg-white/45" />
-          <span className="h-2 w-2 rounded-full bg-white/45" />
-          <span className="h-2 w-2 rounded-full bg-white/45" />
+          <div className="relative h-[310px] overflow-hidden rounded-[28px] border border-primary/25 bg-[radial-gradient(circle_at_center,rgba(212,175,55,0.14),transparent_55%)] shadow-[0_0_70px_rgba(212,175,55,0.12)] lg:h-[395px] xl:h-[430px]">
+            <Image
+              src="/black-hoodie-with-gold-details-streetwear.jpg"
+              alt="Moletom LW Gold Edition"
+              fill
+              priority
+              className="object-cover object-center brightness-[0.84] contrast-110 saturate-95"
+            />
+            <div className="absolute inset-0 bg-gradient-to-r from-black/10 via-transparent to-black/20" />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/35 via-transparent to-black/10" />
+          </div>
         </div>
       </div>
     </section>
