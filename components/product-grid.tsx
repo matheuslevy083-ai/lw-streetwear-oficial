@@ -22,6 +22,16 @@ const categories = [
   { label: "Sale", value: "Sale", icon: Tag },
 ]
 
+
+function mixedOrderKey(product: Product, seed: number) {
+  const text = `${product.id}-${product.name}-${seed}`
+  let hash = 0
+  for (let index = 0; index < text.length; index += 1) {
+    hash = (hash * 31 + text.charCodeAt(index)) >>> 0
+  }
+  return hash
+}
+
 function getStyle(product: Product) {
   const text = `${product.name} ${product.description}`.toLowerCase()
   if (text.includes("moletom") || text.includes("hoodie") || text.includes("blusa")) return "Moletons"
@@ -40,11 +50,13 @@ export function ProductGrid({ products }: ProductGridProps) {
   const [gender, setGender] = useState("Todos")
   const [sort, setSort] = useState("recentes")
   const [showMobileFilters, setShowMobileFilters] = useState(false)
+  const [shuffleSeed, setShuffleSeed] = useState(() => Math.random())
 
   async function loadProducts() {
     setLoading(true)
     const onlineProducts = await getProductsFromSupabase()
     setVisibleProducts(onlineProducts.length > 0 ? onlineProducts : products)
+    setShuffleSeed(Math.random())
     setLoading(false)
   }
 
@@ -70,13 +82,21 @@ export function ProductGrid({ products }: ProductGridProps) {
       return matchesCategory && matchesGender && matchesSearch
     })
 
+    const hasActiveFilter = Boolean(normalizedSearch) || category !== "Todos" || gender !== "Todos" || sort !== "recentes"
+
+    if (!hasActiveFilter) {
+      // Vitrine principal misturada: não mostra na mesma ordem que você cadastrou no admin.
+      // Quando o cliente filtra ou ordena, a lista volta para uma ordem previsível.
+      return [...list].sort((a, b) => mixedOrderKey(a, shuffleSeed) - mixedOrderKey(b, shuffleSeed))
+    }
+
     return [...list].sort((a, b) => {
       if (sort === "menor") return a.price - b.price
       if (sort === "maior") return b.price - a.price
       if (sort === "az") return a.name.localeCompare(b.name)
       return 0
     })
-  }, [visibleProducts, search, category, gender, sort])
+  }, [visibleProducts, search, category, gender, sort, shuffleSeed])
 
   function clearFilters() {
     setSearch("")
