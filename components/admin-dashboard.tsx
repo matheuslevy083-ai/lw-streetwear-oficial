@@ -18,6 +18,89 @@ type EditableProduct = Product & {
   sizesText?: string
 }
 
+const CLOTHING_SIZE_OPTIONS = ["P", "M", "G", "GG"]
+const SHOE_SIZE_OPTIONS = ["38", "39", "40", "41", "42", "43"]
+
+function parseSizesText(value: string) {
+  return value
+    .split(",")
+    .map((size) => size.trim())
+    .filter(Boolean)
+}
+
+function toggleSizeInText(value: string, size: string) {
+  const current = parseSizesText(value)
+  const exists = current.includes(size)
+  const next = exists ? current.filter((item) => item !== size) : [...current, size]
+  return next.join(", ")
+}
+
+function getSizeOptions(value: string) {
+  const current = parseSizesText(value)
+  const hasShoeSize = current.some((size) => /^\d{2}$/.test(size))
+  return hasShoeSize ? SHOE_SIZE_OPTIONS : CLOTHING_SIZE_OPTIONS
+}
+
+function SizePicker({
+  value,
+  onChange,
+  compact = false,
+}: {
+  value: string
+  onChange: (value: string) => void
+  compact?: boolean
+}) {
+  const current = parseSizesText(value)
+  const options = getSizeOptions(value)
+
+  return (
+    <div className="space-y-2">
+      <div className="flex flex-wrap gap-2">
+        {options.map((size) => {
+          const active = current.includes(size)
+          return (
+            <button
+              key={size}
+              type="button"
+              onClick={() => onChange(toggleSizeInText(value, size))}
+              className={`${compact ? "h-9 min-w-10 text-xs" : "h-10 min-w-11 text-sm"} rounded-xl border px-3 font-black transition ${
+                active
+                  ? "border-primary bg-primary text-black"
+                  : "border-primary/25 bg-black text-zinc-300 hover:border-primary hover:text-primary"
+              }`}
+            >
+              {size}
+            </button>
+          )
+        })}
+      </div>
+      <div className="flex flex-wrap gap-2">
+        <button
+          type="button"
+          onClick={() => onChange(CLOTHING_SIZE_OPTIONS.join(", "))}
+          className="rounded-lg border border-primary/25 px-3 py-1.5 text-[11px] font-bold text-primary hover:bg-primary hover:text-black"
+        >
+          Usar tamanhos de roupa
+        </button>
+        <button
+          type="button"
+          onClick={() => onChange(SHOE_SIZE_OPTIONS.join(", "))}
+          className="rounded-lg border border-primary/25 px-3 py-1.5 text-[11px] font-bold text-primary hover:bg-primary hover:text-black"
+        >
+          Usar números de tênis
+        </button>
+      </div>
+      <input
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+        placeholder={options === SHOE_SIZE_OPTIONS ? "38, 39, 40, 41, 42, 43" : "P, M, G, GG"}
+        className="w-full rounded-xl border border-primary/20 bg-black px-4 py-3 text-foreground outline-none focus:border-primary"
+      />
+    </div>
+  )
+}
+
+
 function uniqueImages(images: string[]) {
   return images.filter((image, index, array) => Boolean(image) && array.indexOf(image) === index)
 }
@@ -430,15 +513,11 @@ export function AdminDashboard() {
                   className="min-h-24 w-full rounded-xl border border-primary/20 bg-black px-4 py-3 text-foreground outline-none focus:border-primary"
                 />
               </label>
-              <label className="block">
-                <span className="mb-2 block text-sm font-bold text-primary">Tamanhos</span>
-                <input
-                  value={newSizes}
-                  onChange={(e) => setNewSizes(e.target.value)}
-                  placeholder="P, M, G, GG"
-                  className="w-full rounded-xl border border-primary/20 bg-black px-4 py-3 text-foreground outline-none focus:border-primary"
-                />
-              </label>
+              <div className="block">
+                <span className="mb-2 block text-sm font-bold text-primary">Tamanhos disponíveis</span>
+                <p className="mb-2 text-xs text-muted-foreground">Selecione só os tamanhos que você tem. Para tênis, clique em “Usar números de tênis”.</p>
+                <SizePicker value={newSizes} onChange={setNewSizes} />
+              </div>
               <label className="block">
                 <span className="mb-2 block text-sm font-bold text-primary">Masculino/Feminino</span>
                 <select
@@ -546,14 +625,14 @@ export function AdminDashboard() {
                         className="min-h-20 w-full rounded-lg border border-primary/20 bg-black px-3 py-2 text-foreground outline-none focus:border-primary"
                       />
                     </label>
-                    <label className="block">
-                      <span className="mb-1 block text-xs font-bold text-primary">Tamanhos</span>
-                      <input
+                    <div className="block">
+                      <span className="mb-1 block text-xs font-bold text-primary">Tamanhos disponíveis</span>
+                      <SizePicker
                         value={item.sizesText || ""}
-                        onChange={(e) => updateItem(item.id, "sizesText", e.target.value)}
-                        className="w-full rounded-lg border border-primary/20 bg-black px-3 py-2 text-foreground outline-none focus:border-primary"
+                        onChange={(value) => updateItem(item.id, "sizesText", value)}
+                        compact
                       />
-                    </label>
+                    </div>
                     <label className="block">
                       <span className="mb-1 block text-xs font-bold text-primary">Masculino/Feminino</span>
                       <select

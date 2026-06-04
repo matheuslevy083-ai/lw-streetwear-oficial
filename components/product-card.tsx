@@ -55,11 +55,11 @@ export function ProductCard({ product }: ProductCardProps) {
           )}
         </div>
 
-        <div className="flex min-h-[168px] flex-col p-3 lg:min-h-[190px] lg:p-4">
-          <h3 className="line-clamp-2 min-h-[38px] text-[13px] font-black uppercase leading-tight tracking-[0.02em] text-white transition group-hover:text-primary lg:text-base">
+        <div className="flex min-h-[145px] flex-col p-3 lg:min-h-[180px] lg:p-4">
+          <h3 className="line-clamp-2 min-h-[34px] text-[12px] font-black uppercase leading-tight tracking-[0.02em] text-white transition group-hover:text-primary sm:text-[13px] lg:text-base">
             {product.name}
           </h3>
-          <p className="mt-2 line-clamp-2 text-[11px] leading-relaxed text-zinc-500 lg:text-xs">
+          <p className="mt-1.5 line-clamp-2 text-[10px] leading-relaxed text-zinc-500 sm:text-[11px] lg:text-xs">
             {product.description || "Peça premium da coleção LW Streetwear."}
           </p>
 

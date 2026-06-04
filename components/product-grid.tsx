@@ -186,13 +186,13 @@ export function ProductGrid({ products }: ProductGridProps) {
   )
 
   return (
-    <section id="colecao" className="relative bg-[#030303] pb-28 pt-8 lg:pb-20 lg:pt-10">
-      <div className="mx-auto max-w-[1440px] px-4 lg:px-8 xl:px-12">
-        <div className="mb-6 flex flex-col justify-between gap-4 lg:flex-row lg:items-end">
+    <section id="colecao" className="relative bg-[#030303] pb-24 pt-5 lg:pb-20 lg:pt-10">
+      <div className="mx-auto max-w-[1440px] px-3 sm:px-4 lg:px-8 xl:px-12">
+        <div className="mb-4 flex flex-col justify-between gap-3 lg:mb-6 lg:flex-row lg:items-end">
           <div>
             <p className="mb-2 text-[10px] font-black uppercase tracking-[0.35em] text-primary">Coleção LW</p>
-            <h2 className="text-3xl font-black tracking-tight text-white lg:text-5xl">Produtos em destaque</h2>
-            <p className="mt-2 max-w-[640px] text-sm leading-relaxed text-zinc-400 lg:text-base">
+            <h2 className="text-2xl font-black tracking-tight text-white sm:text-3xl lg:text-5xl">Produtos em destaque</h2>
+            <p className="mt-2 max-w-[640px] text-xs leading-relaxed text-zinc-400 sm:text-sm lg:text-base">
               Produtos misturados na vitrine. Quando filtrar, eles ficam organizados por estilo, público ou preço.
             </p>
           </div>
@@ -201,7 +201,7 @@ export function ProductGrid({ products }: ProductGridProps) {
           </div>
         </div>
 
-        <div id="categorias" className="mb-6 overflow-x-auto rounded-2xl border border-white/10 bg-[#070707] p-2 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        <div id="categorias" className="mb-4 overflow-x-auto rounded-2xl border border-white/10 bg-[#070707] p-2 [-ms-overflow-style:none] [scrollbar-width:none] lg:mb-6 [&::-webkit-scrollbar]:hidden">
           <div className="flex min-w-max items-center gap-2 lg:justify-between lg:gap-3">
             {categories.map((item) => {
               const Icon = item.icon
@@ -224,13 +224,13 @@ export function ProductGrid({ products }: ProductGridProps) {
           </div>
         </div>
 
-        <div className="grid gap-5 lg:grid-cols-[260px_minmax(0,1fr)] xl:grid-cols-[280px_minmax(0,1fr)]">
+        <div className="grid gap-4 lg:grid-cols-[260px_minmax(0,1fr)] xl:grid-cols-[280px_minmax(0,1fr)]">
           <div className="hidden lg:block">
             <FiltersBox />
           </div>
 
           <div className="min-w-0">
-            <div className="mb-5 rounded-[22px] border border-primary/20 bg-[#080808] p-4 shadow-xl shadow-black/30">
+            <div className="mb-4 rounded-[20px] border border-primary/20 bg-[#080808] p-3 shadow-xl shadow-black/30 sm:p-4 lg:mb-5">
               <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
                 <div className="relative flex-1">
                   <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-primary" />
@@ -238,7 +238,7 @@ export function ProductGrid({ products }: ProductGridProps) {
                     value={search}
                     onChange={(event) => setSearch(event.target.value)}
                     placeholder="Peças organizadas por drop, estilo e público..."
-                    className="h-12 w-full rounded-2xl border border-primary/25 bg-black pl-11 pr-4 text-sm text-white outline-none placeholder:text-zinc-500 focus:border-primary"
+                    className="h-11 w-full rounded-2xl border border-primary/25 bg-black pl-10 pr-4 text-sm text-white outline-none placeholder:text-zinc-500 focus:border-primary sm:h-12 sm:pl-11"
                   />
                 </div>
                 <div className="flex items-center gap-2">

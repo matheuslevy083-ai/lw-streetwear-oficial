@@ -43,10 +43,10 @@ export const products: Product[] = [
     dropName: "DROP 001 — GOLD BLACK",
     image: "/black-hoodie-with-gold-details-streetwear.jpg",
     images: ["/black-hoodie-with-gold-details-streetwear.jpg"],
-    sizes: ["P", "M", "G", "GG", "XG"],
+    sizes: ["P", "M", "G", "GG"],
     inStock: true,
     gender: "Masculino",
-    stockBySizes: { P: 20, M: 20, G: 20, GG: 20, XG: 20 },
+    stockBySizes: { P: 20, M: 20, G: 20, GG: 20 },
   },
   {
     id: "3",

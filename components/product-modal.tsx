@@ -13,42 +13,72 @@ interface ProductModalProps {
   onClose: () => void
 }
 
+const SHOE_SIZES = ["38", "39", "40", "41", "42", "43"]
+
+function isShoeProduct(product: Product) {
+  const text = `${product.name} ${product.description} ${product.dropName || ""}`.toLowerCase()
+  return (
+    text.includes("tênis") ||
+    text.includes("tenis") ||
+    text.includes("sneaker") ||
+    text.includes("shoe") ||
+    text.includes("sapato") ||
+    text.includes("mizuno") ||
+    text.includes("nike") ||
+    text.includes("adidas")
+  )
+}
+
+function getDisplaySizes(product: Product) {
+  const sizes = product.sizes && product.sizes.length > 0 ? product.sizes : []
+  const looksLikeClothingSizes =
+    sizes.length === 0 ||
+    sizes.every((size) => ["PP", "P", "M", "G", "GG", "XG", "XGG"].includes(size.toUpperCase()))
+
+  if (isShoeProduct(product) && looksLikeClothingSizes) {
+    return SHOE_SIZES
+  }
+
+  return sizes
+}
+
 export function ProductModal({ product, isOpen, onClose }: ProductModalProps) {
-  const [selectedSize, setSelectedSize] = useState<string>(product.sizes?.[0] || "")
-  const [selectedImage, setSelectedImage] = useState<string>(getProductImages(product)[0])
-  const { addItem } = useCart()
   const images = getProductImages(product)
+  const displaySizes = getDisplaySizes(product)
+  const [selectedSize, setSelectedSize] = useState<string>(displaySizes[0] || "")
+  const [selectedImage, setSelectedImage] = useState<string>(images[0])
+  const { addItem } = useCart()
 
   if (!isOpen) return null
 
   const handleAddToCart = () => {
-    if (!selectedSize && product.sizes && product.sizes.length > 0) return
+    if (!selectedSize && displaySizes.length > 0) return
     addItem(product, selectedSize || "Único")
     onClose()
   }
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-end justify-center bg-black/82 p-0 backdrop-blur-sm sm:items-center sm:p-4"
+      className="fixed inset-0 z-50 flex items-end justify-center bg-black/85 p-0 backdrop-blur-sm sm:items-center sm:p-4"
       onClick={onClose}
     >
       <div
-        className="max-h-[94vh] w-full overflow-y-auto rounded-t-[2rem] border border-primary/25 bg-zinc-950 shadow-2xl shadow-black sm:max-w-5xl sm:rounded-[2rem]"
+        className="max-h-[96vh] w-full overflow-y-auto rounded-t-[1.6rem] border border-primary/25 bg-zinc-950 shadow-2xl shadow-black sm:max-w-5xl sm:rounded-[2rem]"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="sticky top-0 z-10 flex items-center justify-between border-b border-primary/15 bg-zinc-950/95 p-4 backdrop-blur">
+        <div className="sticky top-0 z-10 flex items-center justify-between gap-3 border-b border-primary/15 bg-zinc-950/95 p-3 backdrop-blur sm:p-4">
           <div>
             <p className="text-[10px] font-black uppercase tracking-[0.28em] text-primary">{product.dropName || "LW STREETWEAR"}</p>
-            <h2 className="line-clamp-1 text-lg font-black text-white sm:text-2xl">{product.name}</h2>
+            <h2 className="line-clamp-2 text-base font-black leading-tight text-white sm:line-clamp-1 sm:text-2xl">{product.name}</h2>
           </div>
           <button onClick={onClose} className="rounded-full border border-primary/20 p-2 text-muted-foreground transition-colors hover:text-primary">
             <X className="h-5 w-5" />
           </button>
         </div>
 
-        <div className="grid gap-5 p-4 sm:gap-7 sm:p-6 md:grid-cols-[1.05fr_0.95fr]">
+        <div className="grid gap-4 p-3 sm:gap-7 sm:p-6 md:grid-cols-[1.05fr_0.95fr]">
           <div className="space-y-3">
-            <div className="relative aspect-[3/4] overflow-hidden rounded-3xl bg-black sm:aspect-square">
+            <div className="relative aspect-square overflow-hidden rounded-2xl bg-black sm:rounded-3xl">
               <Image src={selectedImage || images[0]} alt={product.name} fill unoptimized className="object-cover" />
             </div>
 
@@ -74,7 +104,7 @@ export function ProductModal({ product, isOpen, onClose }: ProductModalProps) {
             <div>
               <p className="mb-4 text-sm leading-relaxed text-zinc-300 sm:text-base">{product.description}</p>
 
-              <div className="mb-5 grid grid-cols-2 gap-3">
+              <div className="mb-4 grid grid-cols-2 gap-2 sm:mb-5 sm:gap-3">
                 <div className="rounded-2xl border border-primary/15 bg-black/40 p-3">
                   <Truck className="mb-2 h-4 w-4 text-primary" />
                   <p className="text-xs font-black text-white">Entrega</p>
@@ -87,15 +117,15 @@ export function ProductModal({ product, isOpen, onClose }: ProductModalProps) {
                 </div>
               </div>
 
-              {product.sizes && product.sizes.length > 0 && (
+              {displaySizes.length > 0 && (
                 <div className="mb-5">
-                  <h3 className="mb-3 text-xs font-black uppercase tracking-[0.18em] text-primary">Selecione o tamanho</h3>
+                  <h3 className="mb-3 text-xs font-black uppercase tracking-[0.18em] text-primary">{isShoeProduct(product) ? "Selecione o número" : "Selecione o tamanho"}</h3>
                   <div className="flex flex-wrap gap-2">
-                    {product.sizes.map((size) => (
+                    {displaySizes.map((size) => (
                       <button
                         key={size}
                         onClick={() => setSelectedSize(size)}
-                        className={`min-w-12 rounded-2xl border px-4 py-2 text-sm font-black transition-all ${
+                        className={`min-w-12 rounded-xl border px-4 py-3 text-sm font-black transition-all sm:rounded-2xl sm:py-2 ${
                           selectedSize === size
                             ? "border-primary bg-primary text-black"
                             : "border-primary/30 text-foreground hover:border-primary"
@@ -108,7 +138,7 @@ export function ProductModal({ product, isOpen, onClose }: ProductModalProps) {
                 </div>
               )}
 
-              <div className="mb-5 rounded-3xl border border-primary/15 bg-black/40 p-4">
+              <div className="mb-4 rounded-2xl border border-primary/15 bg-black/40 p-4 sm:mb-5 sm:rounded-3xl">
                 <span className="block text-3xl font-black text-primary sm:text-4xl">R$ {product.price.toFixed(2)}</span>
                 <p className="mt-1 text-sm text-zinc-400">4x de R$ {(product.price / 4).toFixed(2)}</p>
                 {product.reservationPrice && (
